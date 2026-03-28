@@ -55,7 +55,7 @@ def parse_prescription(file_path: str) -> dict:
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1000,
-        system="Extract prescription info as JSON only. Fields: patient_name, medications (name, dosage, frequency, duration), doctor_name, next_appointment. Return JSON only, no extra text.",
+        system="Extract prescription info as JSON only. Fields: patient_name, allergies, medications (name, dosage, frequency, duration), doctor_name, next_appointment. Return JSON only, no extra text.",
         messages=[{"role": "user", "content": raw_text}]
     )
 

@@ -35,6 +35,24 @@ def upload_prescription():
     os.remove(file_path)
     return jsonify({"message": "Prescription uploaded!", "data": parsed})
 
+@app.route("/add-manual", methods=["POST"])
+def add_manual():
+    data = request.json
+    
+    required_fields = ["patient_name", "medications"]
+    for field in required_fields:
+        if field not in data:
+            return jsonify({"error": f"Missing field: {field}"}), 400
+    
+    medications = load_medications()
+    medications.append(data)
+    save_medications(medications)
+    
+    return jsonify({
+        "message": "Patient data added successfully!",
+        "data": data
+    })
+
 @app.route("/ask", methods=["POST"])
 def ask():
     data = request.json
@@ -62,6 +80,17 @@ def ask_voice():
     text_to_speech(answer, "response.mp3")
     os.remove(audio_path)
     return send_file("response.mp3", mimetype="audio/mpeg")
+
+@app.route("/get-medications", methods=["GET"])
+def get_medications():
+    medications = load_medications()
+    return jsonify(medications)
+
+@app.route("/get-medications/<patient_name>", methods=["GET"])
+def get_medications_by_patient(patient_name):
+    medications = load_medications()
+    patient_meds = [m for m in medications if m.get("patient_name", "").lower() == patient_name.lower()]
+    return jsonify(patient_meds)
 
 if __name__ == "__main__":
     start_scheduler()
