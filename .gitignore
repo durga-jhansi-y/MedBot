@@ -1,6 +1,34 @@
+# Python
 venv/
 __pycache__/
-*.db
-.env
 *.pyc
+*.pyo
+*.db
+
+# Environment
+.env
+
+# Data files
 medications.json
+
+# Node (shouldn't be here but just in case)
+node_modules/
+dist/
+build/
+
+# Temp audio files
+*.mp3
+*.wav
+temp_*
+response.mp3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+node_modules/
+dist/
+build/
