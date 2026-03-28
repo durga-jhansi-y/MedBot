@@ -6,6 +6,7 @@ import { Input } from "../components/ui/input";
 import { NavigationBar } from "../components/NavigationBar";
 import { RacingBackground } from "../components/RacingBackground";
 import { TextToSpeech } from "../components/TextToSpeech";
+import { sendChatMessage } from "../../lib/api";
 
 interface Message {
   id: number;
@@ -89,18 +90,30 @@ export function Chatbot() {
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate bot thinking time
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: messages.length + 2,
-        text: getBotResponse(inputValue),
-        sender: "bot",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    (async () => {
+      try {
+        const res = await sendChatMessage(inputValue);
+        const reply = res?.reply || res?.message || getBotResponse(inputValue);
+        const botResponse: Message = {
+          id: messages.length + 2,
+          text: reply,
+          sender: "bot",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botResponse]);
+      } catch (err) {
+        console.error("Chat API error:", err);
+        const botResponse: Message = {
+          id: messages.length + 2,
+          text: getBotResponse(inputValue),
+          sender: "bot",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botResponse]);
+      } finally {
+        setIsTyping(false);
+      }
+    })();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

@@ -13,6 +13,7 @@ import { TextToSpeech } from "../components/TextToSpeech";
 import { ChatbotWidget } from "../components/ChatbotWidget";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
+import { addMedication, uploadPrescription } from "../../lib/api";
 
 interface MedicationForm {
   name: string;
@@ -116,30 +117,33 @@ export function AddMedication() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!form.name || !form.dosage) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // In a real app, this would send to backend
-    console.log("Medication data:", form);
-    
-    toast.success("Medication added successfully! 🏁", {
-      description: "Your medication has been added to your dashboard.",
-    });
+    try {
+      await addMedication(form);
+      toast.success("Medication added successfully! 🏁", {
+        description: "Your medication has been added to your dashboard.",
+      });
 
-    // Reset form
-    setForm(initialFormState);
-    setSameTimeForAll(false);
-    
-    // Navigate to dashboard after short delay
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 1500);
+      // Reset form
+      setForm(initialFormState);
+      setSameTimeForAll(false);
+
+      // Navigate to dashboard after short delay
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
+    } catch (err: any) {
+      console.error("Add medication error:", err);
+      toast.error("Failed to add medication. Please try again.");
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -408,11 +412,18 @@ export function AddMedication() {
 
                         <Button
                           className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-                          onClick={() => {
-                            toast.success("File processing started! 🏁", {
-                              description: "Your medication will appear on the dashboard soon.",
-                            });
-                            setTimeout(() => navigate("/dashboard"), 1500);
+                          onClick={async () => {
+                            if (!uploadedFile) return;
+                            try {
+                              await uploadPrescription(uploadedFile);
+                              toast.success("File processing started! 🏁", {
+                                description: "Your medication will appear on the dashboard soon.",
+                              });
+                              setTimeout(() => navigate("/dashboard"), 1500);
+                            } catch (err) {
+                              console.error("Upload error:", err);
+                              toast.error("Failed to upload file. Please try again.");
+                            }
                           }}
                         >
                           Process File

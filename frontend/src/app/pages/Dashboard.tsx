@@ -8,6 +8,8 @@ import { RacingBackground } from "../components/RacingBackground";
 import { TextToSpeech } from "../components/TextToSpeech";
 import { ChatbotWidget } from "../components/ChatbotWidget";
 import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { getMedications, markMedicationTaken } from "../../lib/api";
 
 // Mock medication data
 const mockMedications = [
@@ -49,10 +51,41 @@ const mockMedications = [
 export function Dashboard() {
   const pageDescription = "Your medication dashboard. Track all your prescriptions and refill dates in one place.";
 
+  const [medications, setMedications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchMeds() {
+      try {
+        const data = await getMedications();
+        if (mounted) setMedications(data || []);
+      } catch (err) {
+        console.error("Failed to fetch medications:", err);
+        if (mounted) setMedications([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    fetchMeds();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const getRefillStatus = (days: number) => {
     if (days <= 7) return { color: "text-red-600", bg: "bg-red-100", label: "Urgent" };
     if (days <= 14) return { color: "text-orange-600", bg: "bg-orange-100", label: "Soon" };
     return { color: "text-green-600", bg: "bg-green-100", label: "Good" };
+  };
+
+  const handleMarkTaken = async (id: number) => {
+    try {
+      await markMedicationTaken(id);
+      setMedications((prev) => prev.map((m) => (m.id === id ? { ...m, nextDose: "Taken" } : m)));
+    } catch (err) {
+      console.error("Mark taken failed:", err);
+    }
   };
 
   return (
@@ -127,7 +160,11 @@ export function Dashboard() {
             </Link>
           </div>
 
-          {mockMedications.length === 0 ? (
+          {loading ? (
+            <Card className="border-2 border-orange-200">
+              <CardContent className="pt-6 text-center py-12">Loading medications...</CardContent>
+            </Card>
+          ) : medications.length === 0 ? (
             <Card className="border-2 border-orange-200">
               <CardContent className="pt-6 text-center py-12">
                 <Pill className="size-16 text-gray-300 mx-auto mb-4" />
@@ -140,7 +177,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
           ) : (
-            mockMedications.map((med) => {
+            medications.map((med) => {
               const refillStatus = getRefillStatus(med.refillDays);
               const refillProgress = Math.max(0, ((30 - med.refillDays) / 30) * 100);
 
@@ -205,7 +242,7 @@ export function Dashboard() {
                           Next Dose: {med.nextDose}
                         </span>
                       </div>
-                      <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-100">
+                      <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-100" onClick={() => handleMarkTaken(med.id)}>
                         Mark as Taken
                       </Button>
                     </div>

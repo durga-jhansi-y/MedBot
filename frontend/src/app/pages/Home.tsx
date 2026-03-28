@@ -6,9 +6,47 @@ import { NavigationBar } from "../components/NavigationBar";
 import { RacingBackground } from "../components/RacingBackground";
 import { TextToSpeech } from "../components/TextToSpeech";
 import { ChatbotWidget } from "../components/ChatbotWidget";
+import { useEffect, useState } from "react";
+import { getMedications } from "../../lib/api";
 
 export function Home() {
   const welcomeText = "Welcome to MedBot! Your personal medication reminder assistant. Have a speedy recovery!";
+  const [medications, setMedications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await getMedications();
+        if (mounted) setMedications(data || []);
+      } catch (err) {
+        console.error("Failed to load medications on Home:", err);
+        if (mounted) setMedications([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const totalMeds = medications.length;
+  const dosesToday = medications.reduce((acc, m) => {
+    try {
+      if (!m) return acc;
+      const times = m.timesPerDay;
+      if (!times) return acc;
+      if (Array.isArray(times)) return acc + times.length;
+      if (typeof times === "object") return acc + Object.keys(times).length;
+    } catch (e) {
+      // ignore
+    }
+    return acc;
+  }, 0);
+
+  const refillsNeeded = medications.filter((m) => typeof m.refillDays === "number" && m.refillDays <= 7).length;
 
   return (
     <div className="min-h-screen">
@@ -80,11 +118,27 @@ export function Home() {
                   View all your medications in one place, monitor refill dates,
                   and stay on track with your treatment.
                 </p>
-                <Link to="/dashboard" className="mt-auto">
-                  <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700">
-                    View Dashboard
-                  </Button>
-                </Link>
+                <div className="mt-4 text-center w-full">
+                  <div className="flex justify-between px-6 mb-3 text-sm text-gray-600">
+                    <div>
+                      <div className="text-xs">Total Medications</div>
+                      <div className="text-2xl font-bold text-orange-600">{loading ? '—' : totalMeds}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs">Doses Today</div>
+                      <div className="text-2xl font-bold text-orange-600">{loading ? '—' : dosesToday}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs">Refills Needed</div>
+                      <div className="text-2xl font-bold text-red-600">{loading ? '—' : refillsNeeded}</div>
+                    </div>
+                  </div>
+                  <Link to="/dashboard" className="mt-auto">
+                    <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700">
+                      View Dashboard
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </CardContent>
           </Card>

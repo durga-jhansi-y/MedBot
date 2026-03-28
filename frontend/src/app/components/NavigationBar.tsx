@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Home, Plus, LayoutDashboard, Zap, LogOut, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { useUser } from "../context/UserContext";
@@ -14,6 +14,7 @@ import {
 export function NavigationBar() {
   const location = useLocation();
   const { user, isSignedIn, signOut } = useUser();
+  const navigate = useNavigate();
 
   const navItems = [
     { path: "/home", icon: Home, label: "Home" },
@@ -85,7 +86,15 @@ export function NavigationBar() {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut} className="text-red-600 focus:text-red-600">
+                  <DropdownMenuItem onClick={() => navigate("/profile") }>
+                    <User className="size-4 mr-2" />
+                    Edit Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { signOut(); navigate("/create-account"); }}>
+                    <LogOut className="size-4 mr-2" />
+                    Change Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { signOut(); navigate("/home"); }} className="text-red-600 focus:text-red-600">
                     <LogOut className="size-4 mr-2" />
                     Sign Out
                   </DropdownMenuItem>

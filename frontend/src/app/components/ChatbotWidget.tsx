@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { motion, AnimatePresence } from "motion/react";
+import { sendChatMessage } from "../../lib/api";
 
 interface Message {
   id: number;
@@ -88,17 +89,30 @@ export function ChatbotWidget() {
     setInputValue("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: messages.length + 2,
-        text: getBotResponse(inputValue),
-        sender: "bot",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    (async () => {
+      try {
+        const res = await sendChatMessage(inputValue);
+        const reply = res?.reply || res?.message || getBotResponse(inputValue);
+        const botResponse: Message = {
+          id: messages.length + 2,
+          text: reply,
+          sender: "bot",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botResponse]);
+      } catch (err) {
+        console.error("Chat API error:", err);
+        const botResponse: Message = {
+          id: messages.length + 2,
+          text: getBotResponse(inputValue),
+          sender: "bot",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botResponse]);
+      } finally {
+        setIsTyping(false);
+      }
+    })();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

@@ -1,21 +1,35 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
+import { getProfile } from "../../lib/api";
 
 export function EntryRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    try {
-      const seen = localStorage.getItem("hasSeenSignIn");
-      if (seen === "true") {
-        navigate("/home", { replace: true });
-      } else {
+    (async () => {
+      try {
+        // Prefer server-side profile check when available
+        const profile = await getProfile();
+        if (profile && (profile.onboarded === true || profile.hasAccount === true)) {
+          navigate("/home", { replace: true });
+          return;
+        }
+      } catch (err) {
+        // ignore and fallback to local storage
+      }
+
+      try {
+        const seen = localStorage.getItem("hasSeenSignIn");
+        if (seen === "true") {
+          navigate("/home", { replace: true });
+        } else {
+          navigate("/create-account", { replace: true });
+        }
+      } catch (e) {
+        // Fallback to create-account on any storage errors
         navigate("/create-account", { replace: true });
       }
-    } catch (e) {
-      // Fallback to create-account on any storage errors
-      navigate("/create-account", { replace: true });
-    }
+    })();
   }, [navigate]);
 
   return null;
