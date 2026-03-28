@@ -34,3 +34,5 @@ dist/
 build/
 
 .github/
+
+.package-lock.json/

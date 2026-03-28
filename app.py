@@ -34,8 +34,7 @@ def save_profiles(profiles):
 
 @app.route("/")
 def home():
-    frontend_index = os.path.join(os.path.dirname(__file__), "frontend", "index.html")
-    return send_file(frontend_index)
+    return "MedBot backend is running!"
 
 @app.route("/login", methods=["POST"])
 def login():
