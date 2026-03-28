@@ -13,13 +13,14 @@ import { TextToSpeech } from "../components/TextToSpeech";
 import { ChatbotWidget } from "../components/ChatbotWidget";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
-import { addMedication, uploadPrescription } from "../../lib/api";
+import { api } from "../api";
+import { useUser } from "../context/UserContext";
 
 interface MedicationForm {
   name: string;
   dosage: string;
   daysToTake: string[];
-  timesPerDay: Record<string, string>; // day -> time mapping
+  timesPerDay: Record<string, string>;
   refillDays: string;
   instructions: string;
 }
@@ -45,6 +46,7 @@ const DAYS_OF_WEEK = [
 
 export function AddMedication() {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [form, setForm] = useState<MedicationForm>(initialFormState);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [sameTimeForAll, setSameTimeForAll] = useState(false);
@@ -59,13 +61,10 @@ export function AddMedication() {
       const newDaysToTake = isRemoving
         ? prev.daysToTake.filter((d) => d !== day)
         : [...prev.daysToTake, day];
-      
-      // Remove time entry if day is unchecked
       const newTimesPerDay = { ...prev.timesPerDay };
       if (isRemoving) {
         delete newTimesPerDay[day];
       }
-      
       return {
         ...prev,
         daysToTake: newDaysToTake,
@@ -75,33 +74,24 @@ export function AddMedication() {
   };
 
   const handleTimeChange = (day: string, time: string) => {
-    setForm((prev) => ({
-      ...prev,
-      timesPerDay: {
-        ...prev.timesPerDay,
-        [day]: time,
-      },
-    }));
-
-    // If "same time for all" is enabled, update all selected days
     if (sameTimeForAll) {
       setForm((prev) => {
         const updatedTimes: Record<string, string> = {};
         prev.daysToTake.forEach((d) => {
           updatedTimes[d] = time;
         });
-        return {
-          ...prev,
-          timesPerDay: updatedTimes,
-        };
+        return { ...prev, timesPerDay: updatedTimes };
       });
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        timesPerDay: { ...prev.timesPerDay, [day]: time },
+      }));
     }
   };
 
   const handleSameTimeToggle = (checked: boolean) => {
     setSameTimeForAll(checked);
-    
-    // If enabling, auto-fill all days with the first time entry found
     if (checked) {
       const firstTime = Object.values(form.timesPerDay).find((t) => t) || "";
       if (firstTime) {
@@ -109,10 +99,7 @@ export function AddMedication() {
         form.daysToTake.forEach((day) => {
           updatedTimes[day] = firstTime;
         });
-        setForm((prev) => ({
-          ...prev,
-          timesPerDay: updatedTimes,
-        }));
+        setForm((prev) => ({ ...prev, timesPerDay: updatedTimes }));
       }
     }
   };
@@ -120,26 +107,43 @@ export function AddMedication() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
     if (!form.name || !form.dosage) {
       toast.error("Please fill in all required fields");
       return;
     }
 
+    if (!user) {
+      toast.error("Please sign in first!");
+      return;
+    }
+
     try {
-      await addMedication(form);
+      const times = Object.values(form.timesPerDay).filter(Boolean);
+
+      await api.addManual({
+        patient_name: user.name,
+        medications: [
+          {
+            name: form.name,
+            dosage: form.dosage,
+            frequency: `${form.daysToTake.length} days a week`,
+            duration: `${form.refillDays} days`,
+            times: times,
+            instructions: form.instructions,
+            days: form.daysToTake,
+            refillDays: parseInt(form.refillDays) || 30,
+          },
+        ],
+      });
+
       toast.success("Medication added successfully! 🏁", {
         description: "Your medication has been added to your dashboard.",
       });
 
-      // Reset form
       setForm(initialFormState);
       setSameTimeForAll(false);
 
-      // Navigate to dashboard after short delay
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      setTimeout(() => navigate("/dashboard"), 1500);
     } catch (err: any) {
       console.error("Add medication error:", err);
       toast.error("Failed to add medication. Please try again.");
@@ -150,19 +154,35 @@ export function AddMedication() {
     const file = e.target.files?.[0];
     if (file) {
       setUploadedFile(file);
-      
-      // In a real app, this would parse the file and extract medication info
       toast.success("File uploaded successfully! 🏁", {
         description: `${file.name} is ready to be processed.`,
       });
-      
-      // Simulate file processing
-      console.log("File uploaded:", file.name);
     }
   };
 
   const removeFile = () => {
     setUploadedFile(null);
+  };
+
+  const handleProcessFile = async () => {
+    if (!uploadedFile) return;
+
+    if (!user) {
+      toast.error("Please sign in first!");
+      return;
+    }
+
+    try {
+      const data = await api.uploadPrescription(uploadedFile);
+      console.log("Prescription parsed:", data);
+      toast.success("Prescription processed successfully! 🏁", {
+        description: "Your medications have been extracted and saved!",
+      });
+      setTimeout(() => navigate("/dashboard"), 1500);
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Failed to process file. Please try again.");
+    }
   };
 
   const pageDescription = "Add your medication details manually or upload a prescription file. We'll help you stay on track!";
@@ -175,7 +195,6 @@ export function AddMedication() {
       
       <main className="container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-3xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <Flag className="size-8 text-orange-600" />
@@ -185,9 +204,7 @@ export function AddMedication() {
               <Flag className="size-8 text-orange-600" />
               <TextToSpeech text={pageDescription} />
             </div>
-            <p className="text-gray-600">
-              {pageDescription}
-            </p>
+            <p className="text-gray-600">{pageDescription}</p>
           </div>
 
           <Tabs defaultValue="manual" className="w-full">
@@ -214,9 +231,7 @@ export function AddMedication() {
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name">
-                        Prescription Name *
-                      </Label>
+                      <Label htmlFor="name">Prescription Name *</Label>
                       <Input
                         id="name"
                         placeholder="e.g., Lisinopril"
@@ -227,9 +242,7 @@ export function AddMedication() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="dosage">
-                        Dosage *
-                      </Label>
+                      <Label htmlFor="dosage">Dosage *</Label>
                       <Input
                         id="dosage"
                         placeholder="e.g., 10mg"
@@ -241,9 +254,7 @@ export function AddMedication() {
 
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>
-                          Days to Take
-                        </Label>
+                        <Label>Days to Take</Label>
                         <div className="grid grid-cols-2 gap-3">
                           {DAYS_OF_WEEK.map((day) => (
                             <div key={day} className="flex items-center space-x-2">
@@ -254,7 +265,7 @@ export function AddMedication() {
                               />
                               <label
                                 htmlFor={day}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                className="text-sm font-medium leading-none cursor-pointer"
                               >
                                 {day}
                               </label>
@@ -263,7 +274,6 @@ export function AddMedication() {
                         </div>
                       </div>
 
-                      {/* Show "same time for all" toggle when at least one day is selected */}
                       {form.daysToTake.length > 1 && (
                         <div className="flex items-center space-x-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                           <Checkbox
@@ -271,16 +281,12 @@ export function AddMedication() {
                             checked={sameTimeForAll}
                             onCheckedChange={(checked) => handleSameTimeToggle(checked as boolean)}
                           />
-                          <label
-                            htmlFor="sameTimeForAll"
-                            className="text-sm font-medium leading-none cursor-pointer"
-                          >
+                          <label htmlFor="sameTimeForAll" className="text-sm font-medium cursor-pointer">
                             Same time for all days
                           </label>
                         </div>
                       )}
 
-                      {/* Show individual time inputs for each selected day */}
                       {form.daysToTake.length > 0 && (
                         <div className="space-y-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                           <Label className="text-base">Time for Each Day</Label>
@@ -303,9 +309,7 @@ export function AddMedication() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="refillDays">
-                        Days Until Refill Needed
-                      </Label>
+                      <Label htmlFor="refillDays">Days Until Refill Needed</Label>
                       <Input
                         id="refillDays"
                         type="number"
@@ -316,9 +320,7 @@ export function AddMedication() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="instructions">
-                        Special Instructions
-                      </Label>
+                      <Label htmlFor="instructions">Special Instructions</Label>
                       <Textarea
                         id="instructions"
                         placeholder="e.g., Take with food, avoid grapefruit"
@@ -355,7 +357,7 @@ export function AddMedication() {
                 <CardHeader>
                   <CardTitle>Upload Prescription File</CardTitle>
                   <CardDescription>
-                    Upload a file containing your medication information (PDF, Image, or Text)
+                    Upload your prescription file and we'll extract the medication info automatically!
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -368,13 +370,13 @@ export function AddMedication() {
                             <span className="font-semibold">Click to upload</span> or drag and drop
                           </p>
                           <p className="text-xs text-gray-500">
-                            PDF, PNG, JPG or TXT (MAX. 10MB)
+                            PDF, DOCX, XLSX or TXT (MAX. 10MB)
                           </p>
                         </div>
                         <input
                           type="file"
                           className="hidden"
-                          accept=".pdf,.png,.jpg,.jpeg,.txt"
+                          accept=".pdf,.docx,.xlsx,.txt"
                           onChange={handleFileUpload}
                         />
                       </label>
@@ -401,34 +403,12 @@ export function AddMedication() {
                     )}
 
                     {uploadedFile && (
-                      <div className="space-y-4">
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-800">
-                            <strong>Note:</strong> Your file will be processed by our backend
-                            system to extract medication information. This is a frontend demo,
-                            so the actual processing will happen when connected to the backend.
-                          </p>
-                        </div>
-
-                        <Button
-                          className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-                          onClick={async () => {
-                            if (!uploadedFile) return;
-                            try {
-                              await uploadPrescription(uploadedFile);
-                              toast.success("File processing started! 🏁", {
-                                description: "Your medication will appear on the dashboard soon.",
-                              });
-                              setTimeout(() => navigate("/dashboard"), 1500);
-                            } catch (err) {
-                              console.error("Upload error:", err);
-                              toast.error("Failed to upload file. Please try again.");
-                            }
-                          }}
-                        >
-                          Process File
-                        </Button>
-                      </div>
+                      <Button
+                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                        onClick={handleProcessFile}
+                      >
+                        Process Prescription File
+                      </Button>
                     )}
                   </div>
                 </CardContent>

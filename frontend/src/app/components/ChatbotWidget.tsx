@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Flag, Volume2, Maximize2, Minimize2, X } from "lucide-react";
+import { Send, Bot, User, Volume2, Maximize2, Minimize2, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { motion, AnimatePresence } from "motion/react";
-import { sendChatMessage } from "../../lib/api";
+import { api } from "../api";
+import { useUser } from "../context/UserContext";
 
 interface Message {
   id: number;
@@ -13,46 +14,28 @@ interface Message {
   timestamp: Date;
 }
 
-// Mock bot responses based on keywords
 const getBotResponse = (userMessage: string): string => {
   const message = userMessage.toLowerCase();
-  
   if (message.includes("hello") || message.includes("hi") || message.includes("hey")) {
-    return "Hello! I'm MedBot, your speedy medication assistant! How can I help you today? I can help you set up reminders, answer questions about your medications, or guide you through the app.";
+    return "Hello! I'm MedBot, your speedy medication assistant! How can I help you today?";
   }
-  
   if (message.includes("reminder") || message.includes("set")) {
-    return "I'd be happy to help you set up a medication reminder! Once connected to the backend, I'll be able to schedule reminders for you. For now, you can add medications through the 'Add Med' page, and I'll guide you through the process. What medication would you like to set a reminder for?";
+    return "I'd be happy to help you set up a medication reminder! You can add medications through the Add Med page.";
   }
-  
   if (message.includes("food") || message.includes("eat") || message.includes("meal")) {
-    return "Great question about taking medication with food! Many medications work best when taken with meals to reduce stomach upset and improve absorption. However, some need to be taken on an empty stomach. Always check your prescription label or ask your pharmacist. Would you like me to check a specific medication?";
+    return "Many medications work best when taken with meals. Always check your prescription label or ask your pharmacist.";
   }
-  
   if (message.includes("side effect") || message.includes("reaction")) {
-    return "Side effects can vary by medication. Common ones include nausea, dizziness, or drowsiness. If you experience severe side effects like difficulty breathing, chest pain, or severe rash, seek medical attention immediately. For specific medication information, please consult your healthcare provider or pharmacist.";
+    return "Side effects can vary by medication. If you experience severe side effects, seek medical attention immediately.";
   }
-  
-  if (message.includes("interaction") || message.includes("take with") || message.includes("together")) {
-    return "Medication interactions are important to consider! Some medications shouldn't be taken together, while others are safe to combine. Common interactions include certain antibiotics with dairy, blood thinners with aspirin, and some medications with grapefruit juice. Always inform your doctor about all medications you're taking. What medications are you asking about?";
-  }
-  
-  if (message.includes("refill") || message.includes("prescription")) {
-    return "You can check your refill status on the Dashboard page! I'll notify you when you're running low on any medication. Typically, you should refill prescriptions when you have 7-10 days remaining. Would you like me to help you navigate to the dashboard?";
-  }
-  
-  if (message.includes("dashboard") || message.includes("navigate") || message.includes("how to use")) {
-    return "Let me help you navigate MedBot! 🏁 Use 'Add Med' to input new medications, check your 'Dashboard' to see all your meds and refill dates, and come chat with me anytime for questions! You can also use our text-to-speech feature on any page. What would you like to explore?";
-  }
-  
   if (message.includes("thank") || message.includes("thanks")) {
-    return "You're welcome! I'm here to help you have a speedy recovery! 🏁 Feel free to ask me anything about your medications or the app anytime.";
+    return "You're welcome! I'm here to help you have a speedy recovery! 🏁";
   }
-  
-  return "I'm here to help with your medication questions! I can assist you with setting up reminders, explaining how to take your medications, checking for potential interactions, and navigating the app. What would you like to know?";
+  return "I'm here to help with your medication questions! Please sign in so I can give you personalized answers about your prescriptions.";
 };
 
 export function ChatbotWidget() {
+  const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -75,7 +58,7 @@ export function ChatbotWidget() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
@@ -86,33 +69,42 @@ export function ChatbotWidget() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const question = inputValue;
     setInputValue("");
     setIsTyping(true);
 
-    (async () => {
-      try {
-        const res = await sendChatMessage(inputValue);
-        const reply = res?.response || res?.reply || res?.message || getBotResponse(inputValue);
-        const botResponse: Message = {
-          id: messages.length + 2,
-          text: reply,
-          sender: "bot",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, botResponse]);
-      } catch (err) {
-        console.error("Chat API error:", err);
-        const botResponse: Message = {
-          id: messages.length + 2,
-          text: getBotResponse(inputValue),
-          sender: "bot",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, botResponse]);
-      } finally {
-        setIsTyping(false);
+    try {
+      let responseText = "";
+
+      if (user) {
+        const data = await api.askQuestion(user.name, question);
+        responseText = data.answer;
+      } else {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 + Math.random() * 1000)
+        );
+        responseText = getBotResponse(question);
       }
-    })();
+
+      const botResponse: Message = {
+        id: messages.length + 2,
+        text: responseText,
+        sender: "bot",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, botResponse]);
+    } catch (error) {
+      const errorResponse: Message = {
+        id: messages.length + 2,
+        text: "Sorry I couldn't connect to the server. Please make sure the backend is running!",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -129,7 +121,6 @@ export function ChatbotWidget() {
 
   return (
     <>
-      {/* Floating Chat Button */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
@@ -149,7 +140,6 @@ export function ChatbotWidget() {
         )}
       </AnimatePresence>
 
-      {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -173,7 +163,7 @@ export function ChatbotWidget() {
                       <CardTitle className="text-base">MedBot Assistant</CardTitle>
                       <p className="text-xs text-gray-600 flex items-center gap-2">
                         <span className="size-2 bg-green-500 rounded-full animate-pulse"></span>
-                        Online
+                        {user ? `Chatting as ${user.name}` : "Online"}
                       </p>
                     </div>
                   </div>
@@ -202,7 +192,6 @@ export function ChatbotWidget() {
                 </div>
               </CardHeader>
 
-              {/* Messages Area */}
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
                   <div
@@ -211,7 +200,6 @@ export function ChatbotWidget() {
                       message.sender === "user" ? "flex-row-reverse" : "flex-row"
                     }`}
                   >
-                    {/* Avatar */}
                     <div
                       className={`flex-shrink-0 size-8 rounded-full flex items-center justify-center ${
                         message.sender === "bot"
@@ -226,7 +214,6 @@ export function ChatbotWidget() {
                       )}
                     </div>
 
-                    {/* Message Bubble */}
                     <div
                       className={`flex flex-col max-w-[75%] ${
                         message.sender === "user" ? "items-end" : "items-start"
@@ -263,7 +250,6 @@ export function ChatbotWidget() {
                   </div>
                 ))}
 
-                {/* Typing Indicator */}
                 {isTyping && (
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 size-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
@@ -272,14 +258,8 @@ export function ChatbotWidget() {
                     <div className="bg-orange-50 border border-orange-200 px-3 py-2 rounded-2xl">
                       <div className="flex gap-1">
                         <span className="size-2 bg-orange-400 rounded-full animate-bounce"></span>
-                        <span
-                          className="size-2 bg-orange-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></span>
-                        <span
-                          className="size-2 bg-orange-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.4s" }}
-                        ></span>
+                        <span className="size-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
+                        <span className="size-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></span>
                       </div>
                     </div>
                   </div>
@@ -288,14 +268,13 @@ export function ChatbotWidget() {
                 <div ref={messagesEndRef} />
               </CardContent>
 
-              {/* Input Area */}
               <div className="border-t-2 border-orange-200 p-3 bg-gradient-to-r from-orange-50 to-red-50 flex-shrink-0">
                 <div className="flex gap-2">
                   <Input
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Ask me anything..."
+                    placeholder={user ? "Ask me about your medications..." : "Sign in for personalized answers..."}
                     className="flex-1 border-orange-300 focus:border-orange-500"
                   />
                   <Button
