@@ -62,12 +62,31 @@ def upload_prescription():
     file = request.files["file"]
     file_path = f"temp_{file.filename}"
     file.save(file_path)
-    parsed = parse_prescription(file_path)
-    medications = load_medications()
-    medications.append(parsed)
-    save_medications(medications)
-    os.remove(file_path)
-    return jsonify({"message": "Prescription uploaded!", "data": parsed})
+    
+    try:
+        parsed = parse_prescription(file_path)
+        medications = load_medications()
+        
+        patient_name = parsed.get("patient_name")
+        if patient_name:
+            existing = next((m for m in medications if m.get("patient_name", "").lower() == patient_name.lower()), None)
+            if existing:
+                existing.update(parsed)
+            else:
+                medications.append(parsed)
+        else:
+            medications.append(parsed)
+        
+        save_medications(medications)
+        return jsonify({"message": "Prescription uploaded!", "data": parsed})
+    
+    except Exception as e:
+        print(f"Error processing file: {e}")
+        return jsonify({"error": str(e)}), 500
+    
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
 @app.route("/add-manual", methods=["POST"])
 def add_manual():
