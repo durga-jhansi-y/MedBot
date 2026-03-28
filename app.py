@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 from services.pdf_parser import parse_prescription
 from services.qa_service import answer_question
 from services.voice_service import speech_to_text, text_to_speech, live_voice_to_text
@@ -7,6 +8,7 @@ import json
 import os
 
 app = Flask(__name__)
+CORS(app)
 DATA_FILE = "medications.json"
 
 def load_medications():
@@ -131,6 +133,102 @@ def get_medications_by_patient(patient_name):
     patient_meds = [m for m in medications if m.get("patient_name", "").lower() == patient_name.lower()]
     return jsonify(patient_meds)
 
+# Frontend API endpoints
+@app.route("/api/medications", methods=["GET", "POST"])
+def api_medications():
+    if request.method == "GET":
+        return jsonify(load_medications())
+    else:
+        data = request.json
+        medications = load_medications()
+        
+        # Create medication entry
+        med_entry = {
+            "name": data.get("name"),
+            "dosage": data.get("dosage"),
+            "daysToTake": data.get("daysToTake", []),
+            "timesPerDay": data.get("timesPerDay", {}),
+            "refillDays": int(data.get("refillDays", 0)) if data.get("refillDays") else None,
+            "instructions": data.get("instructions", "")
+        }
+        
+        medications.append(med_entry)
+        save_medications(medications)
+        
+        return jsonify({
+            "message": "Medication added successfully",
+            "data": med_entry
+        })
+
+@app.route("/api/upload", methods=["POST"])
+def api_upload():
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file_path = f"temp_{file.filename}"
+    file.save(file_path)
+    
+    try:
+        parsed = parse_prescription(file_path)
+        medications = load_medications()
+        medications.append(parsed)
+        save_medications(medications)
+        os.remove(file_path)
+        
+        return jsonify({
+            "message": "Prescription uploaded successfully",
+            "data": parsed
+        })
+    except Exception as e:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/medications/<int:med_id>/take", methods=["POST"])
+def api_mark_taken(med_id):
+    medications = load_medications()
+    if 0 <= med_id < len(medications):
+        if "takenLog" not in medications[med_id]:
+            medications[med_id]["takenLog"] = []
+        medications[med_id]["takenLog"].append({
+            "timestamp": str(json.dumps({}))
+        })
+        save_medications(medications)
+        return jsonify({"message": "Medication marked as taken"})
+    return jsonify({"error": "Medication not found"}), 404
+
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    data = request.json
+    message = data.get("message", "")
+    
+    # Get current user context from frontend
+    medications = load_medications()
+    
+    # For simplicity, answer based on all medications
+    # In production, you'd filter by logged-in user
+    answer = answer_question(medications, message)
+    
+    return jsonify({
+        "response": answer,
+        "timestamp": str(json.dumps({}))
+    })
+
+@app.route("/api/me", methods=["GET"])
+def api_get_profile():
+    # Return mock profile for now
+    # In production, this would fetch from a user database
+    return jsonify({
+        "name": "User",
+        "medications_count": len(load_medications())
+    })
+
+@app.route("/api/onboarding/reset", methods=["POST"])
+def api_reset_onboarding():
+    # This would reset onboarding flags in a real database
+    return jsonify({"message": "Onboarding reset successfully"})
+
 if __name__ == "__main__":
     start_scheduler()
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
