@@ -16,10 +16,10 @@ Quick start (npm)
 cd frontend
 ```
 
-2. Install dependencies and start the dev server:
+2. Install dependencies (use the legacy-peer-deps flag if you hit peer dependency errors) and start the dev server:
 
 ```powershell
-npm install
+npm install --legacy-peer-deps
 npm run dev
 ```
 
@@ -41,10 +41,16 @@ yarn dev
 Open: http://localhost:5173/ (Vite default)
 
 Notes
-- If `npm` is not on your PATH after installing Node, you can run it directly:
+- If PowerShell reports that running scripts is disabled when invoking `npm`, run:
 
 ```powershell
-& 'C:\Program Files\nodejs\npm.cmd' install
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+```
+
+- Alternatively, invoke the npm wrapper directly (no policy change required):
+
+```powershell
+& 'C:\Program Files\nodejs\npm.cmd' install --legacy-peer-deps
 & 'C:\Program Files\nodejs\npm.cmd' run dev
 ```
 
