@@ -1,0 +1,138 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                         MedBot Architecture                       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│                          FRONTEND                                 │
+│                  http://localhost:5173                            │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  Pages:                                                  │    │
+│  │  - Home.tsx          (Dashboard overview)               │    │
+│  │  - AddMedication.tsx (Add/Upload meds)                  │    │
+│  │  - Dashboard.tsx     (Med list & tracking)              │    │
+│  │  - Chatbot.tsx       (Q&A interface)                    │    │
+│  │  - UserProfile.tsx   (User settings)                    │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                            ↓ ↑                                    │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  API Client (lib/api.ts)                                │    │
+│  │  - addMedication()                                      │    │
+│  │  - uploadPrescription()                                 │    │
+│  │  - getMedications()                                     │    │
+│  │  - sendChatMessage()                                    │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                   │
+│  .env file:                                                       │
+│  VITE_API_BASE=http://localhost:5000                             │
+└──────────────────────────────────────────────────────────────────┘
+                            ↓ HTTP Requests ↑ JSON Response
+                            ↓                ↑
+┌──────────────────────────────────────────────────────────────────┐
+│                           BACKEND                                 │
+│                    http://localhost:5000                          │
+│                                                                   │
+│  app.py (Flask + CORS enabled)                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  API Routes:                                            │    │
+│  │  GET  /api/medications       → Load all meds           │    │
+│  │  POST /api/medications       → Add new med             │    │
+│  │  POST /api/upload            → Upload prescription     │    │
+│  │  POST /api/medications/:id   → Mark as taken           │    │
+│  │  POST /api/chat              → Ask question            │    │
+│  │  GET  /api/me                → Get user profile        │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                            ↓ ↑                                    │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  Services:                                              │    │
+│  │  - pdf_parser.py     (Extract from prescriptions)      │    │
+│  │  - qa_service.py     (Answer med questions)            │    │
+│  │  - voice_service.py  (Speech to/from text)             │    │
+│  │  - scheduler.py      (Medication reminders)            │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                            ↓ ↑                                    │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  medications.json                                       │    │
+│  │  [                                                      │    │
+│  │    {                                                    │    │
+│  │      "name": "Lisinopril",                             │    │
+│  │      "dosage": "10mg",                                 │    │
+│  │      "daysToTake": ["Monday", "Wednesday"],           │    │
+│  │      "timesPerDay": {"Monday": "09:00", ...},         │    │
+│  │      "refillDays": 30,                                │    │
+│  │      "instructions": "Take with food"                 │    │
+│  │    }                                                   │    │
+│  │  ]                                                      │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+                          KEY CONNECTIONS
+═══════════════════════════════════════════════════════════════════
+
+1. CORS Configuration
+   ┌──────────────────────────────────────────────────┐
+   │ from flask_cors import CORS                      │
+   │ CORS(app)                                        │
+   │                                                  │
+   │ ✓ Allows localhost:5173 to call localhost:5000  │
+   └──────────────────────────────────────────────────┘
+
+2. Frontend API Base URL
+   ┌──────────────────────────────────────────────────┐
+   │ frontend/.env                                    │
+   │ VITE_API_BASE=http://localhost:5000             │
+   │                                                  │
+   │ Used by: src/lib/api.ts                         │
+   └──────────────────────────────────────────────────┘
+
+3. Example API Call Flow
+   ┌──────────────────────────────────────────────────┐
+   │ User clicks "Add Medication"                     │
+   │          ↓                                       │
+   │ AddMedication.tsx: handleSubmit()               │
+   │          ↓                                       │
+   │ api.ts: addMedication(data)                     │
+   │          ↓                                       │
+   │ POST http://localhost:5000/api/medications      │
+   │          ↓                                       │
+   │ app.py: @app.route("/api/medications")          │
+   │          ↓                                       │
+   │ save_medications(meds)                          │
+   │          ↓                                       │
+   │ medications.json updated                        │
+   │          ↓                                       │
+   │ Response: {"message": "...", "data": {...}}     │
+   │          ↓                                       │
+   │ Frontend shows success toast 🎉                 │
+   └──────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+                      GETTING STARTED
+═══════════════════════════════════════════════════════════════════
+
+Step 1: Install Backend Dependencies
+   $ pip install flask-cors
+   $ pip install -r requirements.txt
+
+Step 2: Install Frontend Dependencies
+   $ cd frontend
+   $ npm install
+
+Step 3: Start Backend (Terminal 1)
+   $ python app.py
+   > Running on http://localhost:5000
+
+Step 4: Start Frontend (Terminal 2)
+   $ cd frontend
+   $ npm run dev
+   > Local: http://localhost:5173
+
+Step 5: Test Connection
+   1. Open http://localhost:5173 in browser
+   2. Navigate to "Add Medication"
+   3. Fill form and submit
+   4. Check Dashboard - med should appear
+   5. Backend terminal shows: POST /api/medications 200
+
+═══════════════════════════════════════════════════════════════════

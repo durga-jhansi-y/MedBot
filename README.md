@@ -1,13 +1,73 @@
 MedBot
 ======
 
-This repository contains the MedBot project. It includes a frontend built with Vite and React.
+A medication management system with a React frontend and Flask backend. Track prescriptions, set reminders, and get instant answers about your medications.
 
-Frontend
---------
+## 🚀 Quick Start
 
-Prerequisites
-- Node.js 18+ (includes `npm`).
+### Option 1: Using Batch Scripts (Windows)
+
+1. **Setup Backend:**
+   ```cmd
+   setup_backend.bat
+   ```
+
+2. **Setup Frontend:**
+   ```cmd
+   setup_frontend.bat
+   ```
+
+3. **Start Backend** (in one terminal):
+   ```cmd
+   start_backend.bat
+   ```
+
+4. **Start Frontend** (in another terminal):
+   ```cmd
+   start_frontend.bat
+   ```
+
+### Option 2: Manual Setup
+
+See detailed instructions in [SETUP_GUIDE.md](SETUP_GUIDE.md)
+
+## 📋 Architecture
+
+```
+Frontend (React + Vite) → http://localhost:5173
+    ↓ API calls
+Backend (Flask) → http://localhost:5000
+    ↓
+Services (PDF Parser, QA, Voice, Scheduler)
+    ↓
+medications.json (data storage)
+```
+
+## Backend Setup
+
+### Prerequisites
+- Python 3.8+
+- pip
+
+### Installation
+
+1. Install dependencies:
+```bash
+pip install flask-cors
+pip install -r requirements.txt
+```
+
+2. Start the backend:
+```bash
+python app.py
+```
+
+Backend runs on: http://localhost:5000
+
+## Frontend Setup
+
+### Prerequisites
+- Node.js 18+ (includes `npm`)
 
 Quick start (npm)
 1. Open a terminal in the repo root and change to the frontend folder:
@@ -56,8 +116,19 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 
 - The dev script is defined in `frontend/package.json` (`"dev": "vite"`).
 
-Bcakend : 
-MedBot API Documentation
+## API Documentation
+
+### Frontend Endpoints (New)
+The frontend uses these REST API endpoints:
+- `GET /api/medications` - Get all medications
+- `POST /api/medications` - Add new medication
+- `POST /api/upload` - Upload prescription file
+- `POST /api/medications/:id/take` - Mark medication as taken
+- `POST /api/chat` - Chat with the medication assistant
+- `GET /api/me` - Get user profile
+- `POST /api/onboarding/reset` - Reset onboarding
+
+### Legacy Endpoints (Original)
 Base URL: http://127.0.0.1:5000
 
 1. Login
