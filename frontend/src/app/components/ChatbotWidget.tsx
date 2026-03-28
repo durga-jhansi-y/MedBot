@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Flag, Volume2, Maximize2, Minimize2, X } from "lucide-react";
+import { Send, Bot, User, Flag, Volume2, Maximize2, Minimize2, X, Mic } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -55,6 +55,8 @@ const getBotResponse = (userMessage: string): string => {
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [listeningVoice, setListeningVoice] = useState(false);
+  const recogRef = useRef<any>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -119,6 +121,61 @@ export function ChatbotWidget() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const toggleListeningVoice = () => {
+    const win = window as any;
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    if (listeningVoice && recogRef.current) {
+      try {
+        recogRef.current.stop();
+      } catch (e) {}
+      return;
+    }
+
+    const recog = new SpeechRecognition();
+    recog.continuous = false;
+    recog.interimResults = true;
+    recog.lang = "en-US";
+
+    recog.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = "";
+      let final = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      if (interim) setInputValue(interim);
+      if (final) {
+        setInputValue(final.trim());
+      }
+    };
+
+    recog.onerror = () => {
+      setListeningVoice(false);
+    };
+
+    recog.onend = () => {
+      setListeningVoice(false);
+    };
+
+    recogRef.current = recog;
+    try {
+      recog.start();
+      setListeningVoice(true);
+    } catch (err) {
+      console.error("Speech recognition start error:", err);
+      setListeningVoice(false);
     }
   };
 
@@ -298,6 +355,15 @@ export function ChatbotWidget() {
                     placeholder="Ask me anything..."
                     className="flex-1 border-orange-300 focus:border-orange-500"
                   />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleListeningVoice}
+                    className="size-9"
+                    title={listeningVoice ? "Stop listening" : "Start voice input"}
+                  >
+                    {listeningVoice ? <X className="size-4 text-red-500" /> : <Mic className="size-4" />}
+                  </Button>
                   <Button
                     onClick={handleSend}
                     disabled={!inputValue.trim() || isTyping}
