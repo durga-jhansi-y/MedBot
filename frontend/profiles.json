@@ -1,0 +1,16 @@
+[
+  {
+    "name": "John Smith",
+    "age": "24",
+    "bloodType": "",
+    "medicalConditions": "Asthma\n",
+    "emergencyContact": "",
+    "emergencyPhone": "",
+    "allergies": [
+      "Avocado",
+      "Peanuts"
+    ],
+    "onboarded": true,
+    "hasAccount": true
+  }
+]
