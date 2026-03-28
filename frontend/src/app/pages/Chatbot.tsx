@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Flag, Zap, Volume2 } from "lucide-react";
+import { Send, Bot, User, Flag, Zap, Volume2, Mic, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { NavigationBar } from "../components/NavigationBar";
 import { RacingBackground } from "../components/RacingBackground";
 import { TextToSpeech } from "../components/TextToSpeech";
+import SpeechToText from "../components/SpeechToText";
 import { sendChatMessage } from "../../lib/api";
 
 interface Message {
@@ -120,6 +121,65 @@ export function Chatbot() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  // Fallback in-page speech recognition (ensures visible mic)
+  const [listeningVoice, setListeningVoice] = useState(false);
+  const recogRef = useRef<any>(null);
+
+  const toggleListeningVoice = () => {
+    const win = window as any;
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    if (listeningVoice && recogRef.current) {
+      try {
+        recogRef.current.stop();
+      } catch (e) {}
+      return;
+    }
+
+    const recog = new SpeechRecognition();
+    recog.continuous = false;
+    recog.interimResults = true;
+    recog.lang = "en-US";
+
+    recog.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = "";
+      let final = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      if (interim) setInputValue(interim);
+      if (final) {
+        setInputValue(final.trim());
+      }
+    };
+
+    recog.onerror = () => {
+      setListeningVoice(false);
+    };
+
+    recog.onend = () => {
+      setListeningVoice(false);
+    };
+
+    recogRef.current = recog;
+    try {
+      recog.start();
+      setListeningVoice(true);
+    } catch (err) {
+      console.error("Speech recognition start error:", err);
+      setListeningVoice(false);
     }
   };
 
@@ -260,21 +320,44 @@ export function Chatbot() {
 
             {/* Input Area */}
             <div className="border-t-2 border-orange-200 p-4 bg-gradient-to-r from-orange-50 to-red-50">
-              <div className="flex gap-2">
-                <Input
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask me about your medications..."
-                  className="flex-1 border-orange-300 focus:border-orange-500"
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || isTyping}
-                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-                >
-                  <Send className="size-4" />
-                </Button>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask me about your medications..."
+                    className="w-full pr-12 border-orange-300 focus:border-orange-500"
+                  />
+
+                  <div className="absolute inset-y-0 right-2 flex items-center">
+                    <SpeechToText
+                      onResult={(text, isFinal) => {
+                        setInputValue(text);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleListeningVoice}
+                    className="size-9"
+                    title={listeningVoice ? "Stop listening" : "Start voice input"}
+                  >
+                    {listeningVoice ? <X className="size-4 text-red-500" /> : <Mic className="size-4" />}
+                  </Button>
+
+                  <Button
+                    onClick={handleSend}
+                    disabled={!inputValue.trim() || isTyping}
+                    className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                  >
+                    <Send className="size-4" />
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 Press Enter to send • This is a demo chatbot with simulated responses
