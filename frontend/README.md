@@ -2,9 +2,6 @@
   # Welcome screen design
 
   This is a Vite + React (TypeScript) frontend exported from the welcome-screen design bundle.
-
-  The original design reference: https://www.figma.com/design/1vn7oqXsRqjShVhcI0aDMQ/Welcome-screen-design
-
   ## Prerequisites
 
   - Node.js 18+ (or compatible LTS)
