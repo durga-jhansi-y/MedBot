@@ -11,6 +11,7 @@ import { RacingBackground } from "../components/RacingBackground";
 import { TextToSpeech } from "../components/TextToSpeech";
 import { useUser } from "../context/UserContext";
 import { toast } from "sonner";
+import { api } from "../api";
 
 export function CreateAccount() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export function CreateAccount() {
     setAllergies((prev) => prev.filter((a) => a !== allergy));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.age) {
@@ -51,20 +52,30 @@ export function CreateAccount() {
       return;
     }
 
-    // Sign in the user
-    signIn({
-      ...formData,
-      allergies,
-    });
+    try {
+      await api.addManual({
+        patient_name: formData.name,
+        allergies: allergies,
+        medications: [],
+        medical_conditions: formData.medicalConditions,
+        emergency_contact: formData.emergencyContact,
+        emergency_phone: formData.emergencyPhone,
+        blood_type: formData.bloodType,
+        age: formData.age,
+      });
 
-    toast.success("Welcome to MedBot! 🏁", {
-      description: "Your account has been created successfully.",
-    });
+      await api.login(formData.name);
 
-    // Navigate to home
-    setTimeout(() => {
-      navigate("/");
-    }, 1500);
+      signIn({ ...formData, allergies });
+
+      toast.success("Welcome to MedBot! 🏁", {
+        description: "Your account has been created successfully.",
+      });
+
+      setTimeout(() => navigate("/"), 1500);
+    } catch (error) {
+      toast.error("Something went wrong, please try again!");
+    }
   };
 
   const pageDescription = "Create your MedBot account to get started with personalized medication reminders and health tracking.";
@@ -120,9 +131,7 @@ export function CreateAccount() {
                   </h3>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="name">
-                      Full Name *
-                    </Label>
+                    <Label htmlFor="name">Full Name *</Label>
                     <Input
                       id="name"
                       placeholder="Enter your full name"
@@ -134,9 +143,7 @@ export function CreateAccount() {
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="age">
-                        Age *
-                      </Label>
+                      <Label htmlFor="age">Age *</Label>
                       <Input
                         id="age"
                         type="number"
@@ -148,9 +155,7 @@ export function CreateAccount() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bloodType">
-                        Blood Type
-                      </Label>
+                      <Label htmlFor="bloodType">Blood Type</Label>
                       <Input
                         id="bloodType"
                         placeholder="e.g., A+, O-, AB+"
@@ -169,9 +174,7 @@ export function CreateAccount() {
                   </h3>
 
                   <div className="space-y-2">
-                    <Label htmlFor="allergies">
-                      Allergies
-                    </Label>
+                    <Label htmlFor="allergies">Allergies</Label>
                     <div className="flex gap-2">
                       <Input
                         id="allergies"
@@ -238,9 +241,7 @@ export function CreateAccount() {
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="emergencyContact">
-                        Contact Name
-                      </Label>
+                      <Label htmlFor="emergencyContact">Contact Name</Label>
                       <Input
                         id="emergencyContact"
                         placeholder="Emergency contact name"
@@ -250,9 +251,7 @@ export function CreateAccount() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="emergencyPhone">
-                        Contact Phone
-                      </Label>
+                      <Label htmlFor="emergencyPhone">Contact Phone</Label>
                       <Input
                         id="emergencyPhone"
                         type="tel"
