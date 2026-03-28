@@ -28,10 +28,10 @@ def text_to_speech(text: str, output_path: str):
 
 def live_voice_to_text() -> str:
     recognizer = sr.Recognizer()
-    recognizer.pause_threshold = 3
-    recognizer.non_speaking_duration = 1.5
-    recognizer.energy_threshold = 200
-    recognizer.dynamic_energy_threshold = True
+    recognizer.pause_threshold = 5
+    recognizer.non_speaking_duration = 2
+    recognizer.energy_threshold = 150
+    recognizer.dynamic_energy_threshold = False
 
     try:
         with sr.Microphone() as source:
@@ -41,8 +41,8 @@ def live_voice_to_text() -> str:
 
             audio = recognizer.listen(
                 source,
-                timeout=20,
-                phrase_time_limit=60
+                timeout=30,
+                phrase_time_limit=120
             )
 
             print("Processing your speech...")
