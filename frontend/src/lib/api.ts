@@ -56,6 +56,22 @@ export async function getProfile() {
   return res.json();
 }
 
+export async function getProfiles() {
+  const res = await fetch(baseUrl("/profiles"));
+  if (!res.ok) throw new Error(`Get profiles failed: ${res.status}`);
+  return res.json();
+}
+
+export async function createProfile(data: any) {
+  const res = await fetch(baseUrl("/profiles"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Create profile failed: ${res.status}`);
+  return res.json();
+}
+
 export async function resetOnboarding() {
   const res = await fetch(baseUrl("/api/onboarding/reset"), {
     method: "POST",
@@ -64,4 +80,4 @@ export async function resetOnboarding() {
   return res.json();
 }
 
-export default { addMedication, uploadPrescription, getMedications, markMedicationTaken, sendChatMessage, getProfile, resetOnboarding };
+export default { addMedication, uploadPrescription, getMedications, markMedicationTaken, sendChatMessage, getProfile, getProfiles, createProfile, resetOnboarding };

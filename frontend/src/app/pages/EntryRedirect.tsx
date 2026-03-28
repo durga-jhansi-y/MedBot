@@ -23,7 +23,7 @@ export function EntryRedirect() {
         if (seen === "true") {
           navigate("/home", { replace: true });
         } else {
-          navigate("/create-account", { replace: true });
+          navigate("/sign-in", { replace: true });
         }
       } catch (e) {
         // Fallback to create-account on any storage errors

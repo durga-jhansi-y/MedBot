@@ -10,6 +10,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 DATA_FILE = "medications.json"
+PROFILE_FILE = "profiles.json"
 
 def load_medications():
     if os.path.exists(DATA_FILE):
@@ -21,9 +22,20 @@ def save_medications(meds):
     with open(DATA_FILE, "w") as f:
         json.dump(meds, f, indent=2)
 
+def load_profiles():
+    if os.path.exists(PROFILE_FILE):
+        with open(PROFILE_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_profiles(profiles):
+    with open(PROFILE_FILE, "w") as f:
+        json.dump(profiles, f, indent=2)
+
 @app.route("/")
 def home():
-    return "MedBot backend is running!"
+    frontend_index = os.path.join(os.path.dirname(__file__), "frontend", "index.html")
+    return send_file(frontend_index)
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -133,6 +145,40 @@ def get_medications_by_patient(patient_name):
     patient_meds = [m for m in medications if m.get("patient_name", "").lower() == patient_name.lower()]
     return jsonify(patient_meds)
 
+
+@app.route("/profiles", methods=["GET", "POST"])
+def api_profiles():
+    if request.method == "GET":
+        return jsonify(load_profiles())
+
+    # POST - create new profile
+    data = request.json
+    name = data.get("name")
+    if not name:
+        return jsonify({"error": "Name required"}), 400
+
+    profiles = load_profiles()
+    # Prevent duplicate names (case-insensitive)
+    if any(p.get("name", "").lower() == name.lower() for p in profiles):
+        return jsonify({"error": "Profile with this name already exists"}), 400
+
+    profile = {
+        "name": name,
+        "age": data.get("age", ""),
+        "bloodType": data.get("bloodType", ""),
+        "medicalConditions": data.get("medicalConditions", ""),
+        "emergencyContact": data.get("emergencyContact", ""),
+        "emergencyPhone": data.get("emergencyPhone", ""),
+        "allergies": data.get("allergies", []),
+        "onboarded": True,
+        "hasAccount": True,
+    }
+
+    profiles.append(profile)
+    save_profiles(profiles)
+
+    return jsonify({"message": "Profile created", "data": profile}), 201
+
 # Frontend API endpoints
 @app.route("/api/medications", methods=["GET", "POST"])
 def api_medications():
@@ -217,8 +263,16 @@ def api_chat():
 
 @app.route("/api/me", methods=["GET"])
 def api_get_profile():
-    # Return mock profile for now
-    # In production, this would fetch from a user database
+    # Try to return the first saved profile if available
+    profiles = load_profiles()
+    if profiles:
+        profile = profiles[0]
+        # include a medications_count for compatibility
+        profile_summary = dict(profile)
+        profile_summary["medications_count"] = len(load_medications())
+        return jsonify(profile_summary)
+
+    # Fallback to a minimal mock profile
     return jsonify({
         "name": "User",
         "medications_count": len(load_medications())

@@ -10,6 +10,7 @@ import { Badge } from "../components/ui/badge";
 import { RacingBackground } from "../components/RacingBackground";
 import { TextToSpeech } from "../components/TextToSpeech";
 import { useUser } from "../context/UserContext";
+import { createProfile } from "../../lib/api";
 import { toast } from "sonner";
 
 export function CreateAccount() {
@@ -60,20 +61,26 @@ export function CreateAccount() {
       return;
     }
 
-    // Sign in the user
-    signIn({
-      ...formData,
-      allergies,
-    });
+    // Create profile on the backend then sign in
+    (async () => {
+      try {
+        const payload = { ...formData, allergies };
+        const res = await createProfile(payload);
+        const profile = res.data || res;
+        signIn(profile);
 
-    toast.success("Welcome to MedBot! 🏁", {
-      description: "Your account has been created successfully.",
-    });
+        toast.success("Welcome to MedBot! 🏁", {
+          description: "Your account has been created successfully.",
+        });
 
-    // Navigate to home
-    setTimeout(() => {
-      navigate("/home");
-    }, 1500);
+        // Navigate to home
+        setTimeout(() => {
+          navigate("/home");
+        }, 1500);
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to create profile");
+      }
+    })();
   };
 
   const pageDescription = "Create your MedBot account to get started with personalized medication reminders and health tracking.";

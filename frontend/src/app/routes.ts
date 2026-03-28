@@ -3,6 +3,7 @@ import { Home } from "./pages/Home";
 import { AddMedication } from "./pages/AddMedication";
 import { Dashboard } from "./pages/Dashboard";
 import { CreateAccount } from "./pages/CreateAccount";
+import { SignIn } from "./pages/SignIn";
 import { UserProfile } from "./pages/UserProfile";
 import { EntryRedirect } from "./pages/EntryRedirect";
 import { ResetFirstTime } from "./pages/ResetFirstTime";
@@ -11,6 +12,10 @@ export const router = createBrowserRouter([
   {
     path: "/",
     Component: EntryRedirect,
+  },
+  {
+    path: "/sign-in",
+    Component: SignIn,
   },
   {
     path: "/home",
