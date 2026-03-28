@@ -3,15 +3,25 @@ import { Home } from "./pages/Home";
 import { AddMedication } from "./pages/AddMedication";
 import { Dashboard } from "./pages/Dashboard";
 import { CreateAccount } from "./pages/CreateAccount";
+import { EntryRedirect } from "./pages/EntryRedirect";
+import { ResetFirstTime } from "./pages/ResetFirstTime";
 
 export const router = createBrowserRouter([
   {
     path: "/",
+    Component: EntryRedirect,
+  },
+  {
+    path: "/home",
     Component: Home,
   },
   {
     path: "/create-account",
     Component: CreateAccount,
+  },
+  {
+    path: "/reset-first-time",
+    Component: ResetFirstTime,
   },
   {
     path: "/add-medication",

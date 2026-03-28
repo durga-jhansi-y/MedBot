@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { UserPlus, Flag, Zap, Plus, X } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -15,6 +15,15 @@ import { toast } from "sonner";
 export function CreateAccount() {
   const navigate = useNavigate();
   const { signIn } = useUser();
+
+  // mark that the user has seen the sign-in/create-account page
+  useEffect(() => {
+    try {
+      localStorage.setItem("hasSeenSignIn", "true");
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, []);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -63,7 +72,7 @@ export function CreateAccount() {
 
     // Navigate to home
     setTimeout(() => {
-      navigate("/");
+      navigate("/home");
     }, 1500);
   };
 

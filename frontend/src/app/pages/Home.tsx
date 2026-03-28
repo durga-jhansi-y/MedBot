@@ -47,8 +47,9 @@ export function Home() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          <Card className="border-2 border-orange-200 hover:border-orange-400 transition-all hover:shadow-lg">
+        <div className="min-h-[40vh] flex items-center justify-center my-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 justify-items-center items-center w-full max-w-4xl">
+            <Card className="w-full max-w-md border-2 border-orange-200 hover:border-orange-400 transition-all hover:shadow-lg">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="p-4 bg-gradient-to-br from-orange-100 to-red-100 rounded-full">
@@ -68,7 +69,7 @@ export function Home() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-orange-200 hover:border-orange-400 transition-all hover:shadow-lg">
+            <Card className="w-full max-w-md border-2 border-orange-200 hover:border-orange-400 transition-all hover:shadow-lg">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="p-4 bg-gradient-to-br from-orange-100 to-red-100 rounded-full">
@@ -88,6 +89,7 @@ export function Home() {
             </CardContent>
           </Card>
         </div>
+      </div>
 
         {/* Racing Theme Section */}
         <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300">

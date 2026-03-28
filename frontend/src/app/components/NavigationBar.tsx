@@ -16,7 +16,7 @@ export function NavigationBar() {
   const { user, isSignedIn, signOut } = useUser();
 
   const navItems = [
-    { path: "/", icon: Home, label: "Home" },
+    { path: "/home", icon: Home, label: "Home" },
     { path: "/add-medication", icon: Plus, label: "Add Med" },
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   ];
@@ -26,7 +26,7 @@ export function NavigationBar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 text-white">
+          <Link to="/home" className="flex items-center gap-2 text-white">
             <div className="relative">
               <Zap className="size-8 fill-yellow-400 text-yellow-400" />
               <div className="absolute inset-0 blur-sm">
