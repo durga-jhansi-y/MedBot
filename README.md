@@ -55,3 +55,130 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 ```
 
 - The dev script is defined in `frontend/package.json` (`"dev": "vite"`).
+
+Bcakend : 
+MedBot API Documentation
+Base URL: http://127.0.0.1:5000
+
+1. Login
+
+Method: POST
+URL: /login
+Body:
+
+json{
+    "patient_name": "John Smith"
+}
+
+Response:
+
+json{
+    "message": "Welcome John Smith! Your reminders have been scheduled!",
+    "data": {...}
+}
+
+2. Upload Prescription
+
+Method: POST
+URL: /upload-prescription
+Body: form-data
+
+file → PDF, TXT, DOCX or Excel file
+
+
+Response:
+
+json{
+    "message": "Prescription uploaded!",
+    "data": {
+        "patient_name": "John Smith",
+        "doctor_name": "Dr. Sarah Johnson",
+        "allergies": ["Penicillin"],
+        "medications": [...],
+        "next_appointment": "April 10, 2026"
+    }
+}
+
+3. Add Manual Data
+
+Method: POST
+URL: /add-manual
+Body:
+
+json{
+    "patient_name": "John Smith",
+    "doctor_name": "Dr. Sarah Johnson",
+    "next_appointment": "April 10, 2026",
+    "allergies": ["Penicillin"],
+    "medications": [
+        {
+            "name": "Amoxicillin",
+            "dosage": "500mg",
+            "frequency": "twice daily",
+            "times": ["09:00", "21:00"]
+        }
+    ]
+}
+
+Response:
+
+json{
+    "message": "Patient data added successfully!",
+    "data": {...}
+}
+
+4. Ask a Question (Text)
+
+Method: POST
+URL: /ask
+Body:
+
+json{
+    "patient_name": "John Smith",
+    "question": "What medications am I taking?"
+}
+
+Response:
+
+json{
+    "answer": "You are currently taking..."
+}
+
+5. Ask a Question (Voice File)
+
+Method: POST
+URL: /ask-voice
+Body: form-data
+
+audio → WAV or MP3 file
+patient_name → Text
+
+
+Response: Returns MP3 audio file — play it directly!
+
+
+6. Live Voice Conversation
+
+Method: POST
+URL: /ask-live
+Body:
+
+json{
+    "patient_name": "John Smith"
+}
+
+Response: Returns MP3 audio file — play it directly!
+
+
+7. Get All Medications
+
+Method: GET
+URL: /get-medications
+Response: Returns list of all patients and medications
+
+
+8. Get Patient Medications
+
+Method: GET
+URL: /get-medications/John Smith
+Response: Returns medications for specific patient
