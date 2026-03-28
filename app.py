@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 from services.pdf_parser import parse_prescription
 from services.qa_service import answer_question
 from services.voice_service import speech_to_text, text_to_speech, live_voice_to_text
@@ -7,6 +8,7 @@ import json
 import os
 
 app = Flask(__name__)
+CORS(app)
 DATA_FILE = "medications.json"
 
 def load_medications():
