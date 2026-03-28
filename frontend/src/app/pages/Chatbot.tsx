@@ -94,7 +94,7 @@ export function Chatbot() {
     (async () => {
       try {
         const res = await sendChatMessage(inputValue);
-        const reply = res?.reply || res?.message || getBotResponse(inputValue);
+        const reply = res?.response || res?.reply || res?.message || getBotResponse(inputValue);
         const botResponse: Message = {
           id: messages.length + 2,
           text: reply,

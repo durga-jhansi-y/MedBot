@@ -7,11 +7,17 @@ import { SignIn } from "./pages/SignIn";
 import { UserProfile } from "./pages/UserProfile";
 import { EntryRedirect } from "./pages/EntryRedirect";
 import { ResetFirstTime } from "./pages/ResetFirstTime";
+import { Chatbot } from "./pages/Chatbot";
+import { Welcome } from "./pages/Welcome";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: EntryRedirect,
+  },
+  {
+    path: "/welcome",
+    Component: Welcome,
   },
   {
     path: "/sign-in",
@@ -40,5 +46,9 @@ export const router = createBrowserRouter([
   {
     path: "/profile",
     Component: UserProfile,
+  },
+  {
+    path: "/chatbot",
+    Component: Chatbot,
   },
 ]);

@@ -23,11 +23,11 @@ export function EntryRedirect() {
         if (seen === "true") {
           navigate("/home", { replace: true });
         } else {
-          navigate("/sign-in", { replace: true });
+          navigate("/welcome", { replace: true });
         }
       } catch (e) {
-        // Fallback to create-account on any storage errors
-        navigate("/create-account", { replace: true });
+        // Fallback to welcome on any storage errors
+        navigate("/welcome", { replace: true });
       }
     })();
   }, [navigate]);

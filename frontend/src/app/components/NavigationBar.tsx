@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router";
-import { Home, Plus, LayoutDashboard, Zap, LogOut, User } from "lucide-react";
+import { Home, Plus, LayoutDashboard, Zap, LogOut, User, Bot } from "lucide-react";
 import { Button } from "./ui/button";
 import { useUser } from "../context/UserContext";
 import {
@@ -20,6 +20,7 @@ export function NavigationBar() {
     { path: "/home", icon: Home, label: "Home" },
     { path: "/add-medication", icon: Plus, label: "Add Med" },
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { path: "/chatbot", icon: Bot, label: "Chat" },
   ];
 
   return (
