@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Flag, Zap, Volume2, Mic, X } from "lucide-react";
+import { Send, Bot, User, Flag, Zap, Volume2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -19,39 +19,39 @@ interface Message {
 // Mock bot responses based on keywords
 const getBotResponse = (userMessage: string): string => {
   const message = userMessage.toLowerCase();
-  
+
   if (message.includes("hello") || message.includes("hi") || message.includes("hey")) {
     return "Hello! I'm MedBot, your speedy medication assistant! How can I help you today? I can help you set up reminders, answer questions about your medications, or guide you through the app.";
   }
-  
+
   if (message.includes("reminder") || message.includes("set")) {
     return "I'd be happy to help you set up a medication reminder! Once connected to the backend, I'll be able to schedule reminders for you. For now, you can add medications through the 'Add Med' page, and I'll guide you through the process. What medication would you like to set a reminder for?";
   }
-  
+
   if (message.includes("food") || message.includes("eat") || message.includes("meal")) {
     return "Great question about taking medication with food! Many medications work best when taken with meals to reduce stomach upset and improve absorption. However, some need to be taken on an empty stomach. Always check your prescription label or ask your pharmacist. Would you like me to check a specific medication?";
   }
-  
+
   if (message.includes("side effect") || message.includes("reaction")) {
     return "Side effects can vary by medication. Common ones include nausea, dizziness, or drowsiness. If you experience severe side effects like difficulty breathing, chest pain, or severe rash, seek medical attention immediately. For specific medication information, please consult your healthcare provider or pharmacist.";
   }
-  
+
   if (message.includes("interaction") || message.includes("take with") || message.includes("together")) {
     return "Medication interactions are important to consider! Some medications shouldn't be taken together, while others are safe to combine. Common interactions include certain antibiotics with dairy, blood thinners with aspirin, and some medications with grapefruit juice. Always inform your doctor about all medications you're taking. What medications are you asking about?";
   }
-  
+
   if (message.includes("refill") || message.includes("prescription")) {
     return "You can check your refill status on the Dashboard page! I'll notify you when you're running low on any medication. Typically, you should refill prescriptions when you have 7-10 days remaining. Would you like me to help you navigate to the dashboard?";
   }
-  
+
   if (message.includes("dashboard") || message.includes("navigate") || message.includes("how to use")) {
     return "Let me help you navigate MedBot! 🏁 Use 'Add Med' to input new medications, check your 'Dashboard' to see all your meds and refill dates, and come chat with me anytime for questions! You can also use our text-to-speech feature on any page. What would you like to explore?";
   }
-  
+
   if (message.includes("thank") || message.includes("thanks")) {
     return "You're welcome! I'm here to help you have a speedy recovery! 🏁 Feel free to ask me anything about your medications or the app anytime.";
   }
-  
+
   return "I'm here to help with your medication questions! I can assist you with setting up reminders, explaining how to take your medications, checking for potential interactions, and navigating the app. What would you like to know?";
 };
 
@@ -124,65 +124,6 @@ export function Chatbot() {
     }
   };
 
-  // Fallback in-page speech recognition (ensures visible mic)
-  const [listeningVoice, setListeningVoice] = useState(false);
-  const recogRef = useRef<any>(null);
-
-  const toggleListeningVoice = () => {
-    const win = window as any;
-    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser.");
-      return;
-    }
-
-    if (listeningVoice && recogRef.current) {
-      try {
-        recogRef.current.stop();
-      } catch (e) {}
-      return;
-    }
-
-    const recog = new SpeechRecognition();
-    recog.continuous = false;
-    recog.interimResults = true;
-    recog.lang = "en-US";
-
-    recog.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = "";
-      let final = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-      if (interim) setInputValue(interim);
-      if (final) {
-        setInputValue(final.trim());
-      }
-    };
-
-    recog.onerror = () => {
-      setListeningVoice(false);
-    };
-
-    recog.onend = () => {
-      setListeningVoice(false);
-    };
-
-    recogRef.current = recog;
-    try {
-      recog.start();
-      setListeningVoice(true);
-    } catch (err) {
-      console.error("Speech recognition start error:", err);
-      setListeningVoice(false);
-    }
-  };
-
   const speakMessage = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     window.speechSynthesis.speak(utterance);
@@ -194,7 +135,7 @@ export function Chatbot() {
     <div className="min-h-screen">
       <NavigationBar />
       <RacingBackground />
-      
+
       <main className="container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -321,43 +262,27 @@ export function Chatbot() {
             {/* Input Area */}
             <div className="border-t-2 border-orange-200 p-4 bg-gradient-to-r from-orange-50 to-red-50">
               <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Ask me about your medications..."
-                    className="w-full pr-12 border-orange-300 focus:border-orange-500"
-                  />
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me about your medications..."
+                  className="flex-1 border-orange-300 focus:border-orange-500"
+                />
 
-                  <div className="absolute inset-y-0 right-2 flex items-center">
-                    <SpeechToText
-                      onResult={(text, isFinal) => {
-                        setInputValue(text);
-                      }}
-                    />
-                  </div>
-                </div>
+                <SpeechToText
+                  onResult={(text, isFinal) => {
+                    setInputValue(text);
+                  }}
+                />
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleListeningVoice}
-                    className="size-9"
-                    title={listeningVoice ? "Stop listening" : "Start voice input"}
-                  >
-                    {listeningVoice ? <X className="size-4 text-red-500" /> : <Mic className="size-4" />}
-                  </Button>
-
-                  <Button
-                    onClick={handleSend}
-                    disabled={!inputValue.trim() || isTyping}
-                    className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-                  >
-                    <Send className="size-4" />
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || isTyping}
+                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                >
+                  <Send className="size-4" />
+                </Button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 Press Enter to send • This is a demo chatbot with simulated responses
