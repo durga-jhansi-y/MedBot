@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Bot, User, Flag, Volume2, Maximize2, Minimize2, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { motion, AnimatePresence } from "motion/react";
 import { sendChatMessage } from "../../lib/api";
+import { SpeechToText } from "./SpeechToText";
 
 interface Message {
   id: number;
@@ -121,6 +122,10 @@ export function ChatbotWidget() {
       handleSend();
     }
   };
+
+  const handleSpeechResult = useCallback((text: string) => {
+    setInputValue(text);
+  }, []);
 
   const speakMessage = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -298,6 +303,7 @@ export function ChatbotWidget() {
                     placeholder="Ask me anything..."
                     className="flex-1 border-orange-300 focus:border-orange-500"
                   />
+                  <SpeechToText onResult={handleSpeechResult} />
                   <Button
                     onClick={handleSend}
                     disabled={!inputValue.trim() || isTyping}
